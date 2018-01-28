@@ -26,7 +26,7 @@
         $minDate = date('Y-m-d', strtotime($date. ' + 1 days'));
 
         // $result = $conn->query('SELECT id, vendor, amount_due, ref_num, memo, due_date FROM ALERT_DETAIL WHERE uid="'.$_SESSION['id'].'" AND due_date<='.$date_stripped.' AND is_done=0 ORDER BY vendor,due_date');
-        $result = $conn->query('select t.id, t.threshold,t.vendor,a.amount_sum,a.min_date from threshold_info t join (select sum(amount_due_num) as amount_sum,min(due_date) as min_date, vendor from ALERT_DETAIL where uid="'.$_SESSION['id'].'" AND due_date<='.$date_stripped.' AND is_done=0 group by vendor) a on t.vendor = a.vendor where t.uid = "'.$_SESSION['id'].'" and a.amount_sum > t.threshold order by a.min_date');
+        $result = $conn->query('select t.id, t.threshold,t.vendor,a.sum_amount,a.min_date from threshold_info t join (select sum(amount_due_num) as sum_amount,min(due_date) as min_date, vendor from ALERT_DETAIL where uid="'.$_SESSION['id'].'" AND due_date<='.$date_stripped.' AND is_done=0 group by vendor) a on t.vendor = a.vendor where t.uid = "'.$_SESSION['id'].'" and a.sum_amount > t.threshold order by a.min_date');
 
         $rowCount = mysqli_num_rows($result);
     }
@@ -50,6 +50,12 @@
             }
             #task-table{
                 margin-bottom: 20px;
+            }
+            #task-table tbody tr:hover{
+                background-color: #65d6d8;
+            }
+            .clickable{
+                cursor: pointer;
             }
             .modal-lg .modal-body{
                 height: 440px;
@@ -113,6 +119,7 @@
                 <ul class="nav nav-tabs" role="tablist" style="margin-top: 20px;">
                     <li role="presentation" class="active"><a href="#home" aria-controls="home" role="tab" data-toggle="tab">Home</a></li>
                     <li role="presentation"><a href="#upload" aria-controls="upload" role="tab" data-toggle="tab">Upload Excel</a></li>
+                    <li role="presentation" id="detail-tab" style="display: none;"><a href="#detail" aria-controls="detail" role="tab" data-toggle="tab"></a></li>
                     <li role="presentation" style="float: right;"><a data-toggle="modal" data-target="#logout-modal"><span class="glyphicon glyphicon-log-out"></span>&nbsp;Logout</a></li>
                 </ul>
 
@@ -261,23 +268,20 @@
 
                         <div class="col-xs-6">
                             <p style="margin: 10px 0;">Today - <b><?php echo $date ?></b> (YYYY-MM-DD)</p>
-                            <p style="margin-bottom: 0;">Today's total due - <b><span id="total-due-span"></span></b></p>
+                            <!-- <p style="margin-bottom: 0;">Today's total due - <b><span id="total-due-span"></span></b></p> -->
                         </div>
-                        <div class="col-xs-6" style="margin-top: 25px;text-align: right;">
+                        <!-- <div class="col-xs-6" style="margin-top: 25px;text-align: right;">
                             <button class="btn btn-success complete-btn">Complete</button>&nbsp;<button class="btn btn-danger postpone-btn">Postpone</button>
-                        </div>
+                        </div> -->
                         
                         <hr class="col-xs-12" />
                         
                         <table id="task-table" class="stripe" cellspacing="0" width="100%" style="display: none;">
                             <thead>
                               <tr>
-                                <th>Vendor (Subtotal in $)</th>
-                                <th>Amount Due</th>
-                                <th>Reference #</th>
-                                <th>Memo</th>
-                                <th>Due Date</th>
-                                <th>Action</th>
+                                <th>Vendor</th>
+                                <th>Subtotal</th>
+                                <th>Earliest Date</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -285,13 +289,10 @@
                                     while($row = $result->fetch_assoc()) {
                                         // array_push($tableRows,$row);
                                         echo 
-                                            '<tr>
+                                            '<tr class="clickable" data-name="'.$row['vendor'].'">
                                                 <td>'.$row['vendor'].'</td>
-                                                <td>'.$row['amount_due'].'</td>
-                                                <td>'.$row['ref_num'].'</td>
-                                                <td>'.$row['memo'].'</td>
-                                                <td>'.$row['due_date'].'</td>
-                                                <td class="center row-checkbox-parent"><input type="checkbox" data-vendor="'.$row['vendor'].'" data-ref="'.$row['ref_num'].'" class="row-checkbox"/></td>
+                                                <td>'.$row['sum_amount'].'</td>
+                                                <td>'.$row['min_date'].'</td>
                                             </tr>';
                                     }
                                 ?>
@@ -328,6 +329,35 @@
                             </div>
                         </div>
                     </div>
+
+                    <div role="tabpanel" class="tab-pane" id="detail-tab">
+                        <h1 id="detail-vendor-name"></h1>
+                        <div id="detail-vendor-info">
+                            <table id="detail-table" class="display">
+                                <thead>
+                                    <tr>
+                                        <th>Vendor</th>
+                                        <th>Amount Due</th>
+                                        <th>Ref#</th>
+                                        <th>Memo</th>
+                                        <th>Due Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <th>Vendor</th>
+                                        <th>Amount Due</th>
+                                        <th>Ref#</th>
+                                        <th>Memo</th>
+                                        <th>Due Date</th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -340,6 +370,52 @@
         <script type="text/javascript">
 
             $(document).ready(function() {
+
+                // calculateSubtotal();
+
+                $('#task-table').DataTable({
+                    "aaSorting": []
+                });
+
+                $('#task-table').show();
+            } )
+
+            // click handler for redirecting to detail page
+            $('#task-table tbody tr').click(function () {
+                var name = $(this).data('name');
+                console.log(name);
+                $.ajax({
+                    type: "GET",
+                    url: "get_detail.php",
+                    data: {vendor_name: name},
+                    success: function(detailList){
+                        // var resultList = JSON.parse(detailList);
+                        var resultList = detailList;
+                        console.log('html: '+resultList);
+                        console.log('name: '+name);
+                        $('#detail-vendor-name').text(name);
+                        $('#detail-tab').show();
+                        $('#detail-tab a').html(name);
+
+                        $('#detail-table').DataTable({
+                            data: resultList,
+                            columns: [
+                                {title: "Vendor"},
+                                {title: "Amount Due"},
+                                {title: "Ref#"},
+                                {title: "Memo"},
+                                {title: "Due Date"}
+                            ]
+                        });
+
+                        $('#detail-tab').click();
+                        // window.location = window.location.pathname + window.location.hash;
+                    }  
+                });
+            })
+
+            function calculateSubtotal(){
+
 
                 var vendor = '';
                 var cur_vendor = '';
@@ -389,13 +465,7 @@
                     var f_col = last.find('td:first');
                     f_col.html(f_col.text()+' <b>('+subtotal_final+')</b>');
                 }
-
-                $('#task-table').DataTable({
-                    "aaSorting": []
-                });
-
-                $('#task-table').show();
-            } )
+            }
 
             // stores workbook sheets after drag and drop
             var wbSheets = [];
