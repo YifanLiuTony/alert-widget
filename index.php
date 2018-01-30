@@ -48,21 +48,30 @@
             #alerts .alert{
                 margin-bottom: 0;
             }
-            #task-table{
-                margin-bottom: 20px;
+            hr{
+                width: 100%;
             }
-            #task-table tbody tr:hover{
+            tbody tr{
+                cursor: pointer;
+            }
+            table.dataTable.hover tbody tr:hover, 
+            table.dataTable.display tbody tr:hover,
+            table.dataTable.display tbody tr:hover>.sorting_1, 
+            table.dataTable.order-column.hover tbody tr:hover>.sorting_1{
                 background-color: #65d6d8;
             }
-            .clickable{
-                cursor: pointer;
+            #detail-table tbody tr.selected-row td{
+                background-color: #56f78e;
+            }
+            .modal{
+                width: 100%!important;
             }
             .modal-lg .modal-body{
                 height: 440px;
             }
             .modal-lg .modal-body .vendor-ref-list{
                 overflow-y: auto;
-                height: 300px;
+                height: 280px;
             }
             .modal-lg .modal-body .vendor-ref-list ul{
                 list-style: none;
@@ -72,6 +81,15 @@
             }
             .modal-body-content{
                 margin-top: 20px;
+            }
+            .modal .modal-subtotal-container p{
+                text-align: center;
+                font-weight: bold;
+                font-size: 16px;
+            }
+            .vendor-ref-list dl dd{
+                text-align: center;
+                line-height: 30px;
             }
 
             .outer {
@@ -119,7 +137,7 @@
                 <ul class="nav nav-tabs" role="tablist" style="margin-top: 20px;">
                     <li role="presentation" class="active"><a href="#home" aria-controls="home" role="tab" data-toggle="tab">Home</a></li>
                     <li role="presentation"><a href="#upload" aria-controls="upload" role="tab" data-toggle="tab">Upload Excel</a></li>
-                    <li role="presentation" id="detail-tab" style="display: none;"><a href="#detail" aria-controls="detail" role="tab" data-toggle="tab"></a></li>
+                    <li role="presentation" id="detail-tab-controll" style="display: none;"><a href="#detail" aria-controls="detail" role="tab" data-toggle="tab"></a></li>
                     <li role="presentation" style="float: right;"><a data-toggle="modal" data-target="#logout-modal"><span class="glyphicon glyphicon-log-out"></span>&nbsp;Logout</a></li>
                 </ul>
 
@@ -155,7 +173,7 @@
                     <div class="modal-content">
                       <div class="modal-header">
                         <button type="button" class="close" data-dismiss="modal">&times;</button>
-                        <h4 class="modal-title">Mark Complete</h4>
+                        <h4 class="modal-title">Mark Complete - <span class="vendor-name-span" style="font-weight: bold;"></span></h4>
                       </div>
                       <div class="modal-body">
                             <div class="modal-body-content">
@@ -163,7 +181,7 @@
                                     <p>Are you sure you want to mark the record(s) below as <b>Complete</b>?</p>
                                 </div>
 
-                                <hr class="col-xs-12" />
+                                <hr />
 
                                 <!-- <div id="complete-ref-num-div" class="col-xs-12 vendor-ref-list">
 
@@ -171,14 +189,18 @@
 
                                 <div class="vendor-ref-list col-xs-12">
 
-                                    <div id="complete-vendor-div" class="col-xs-9">
+                                    <div id="complete-ref-num-div" class="col-xs-6">
 
                                     </div>
 
-                                    <div id="complete-ref-num-div" class="col-xs-3">
+                                    <div id="complete-amount-div" class="col-xs-6">
 
                                     </div>
 
+                                </div>
+                                <hr/>
+                                <div class="modal-subtotal-container col-xs-6 col-xs-offset-6">
+                                    <p class="modal-subtotal"></p>
                                 </div>
                             </div>
                       </div>
@@ -201,6 +223,7 @@
                           <div class="modal-header">
                             <button type="button" class="close" data-dismiss="modal">&times;</button>
                             <h4 class="modal-title">Postpone Transaction</h4>
+                            <p>Vendor Name: <span class="vendor-name-span"></span></p>
                           </div>
                           <div class="modal-body">
                             <div class="modal-body-content">
@@ -212,13 +235,13 @@
                                     </div>
                                 </div>
 
-                                <hr class="col-xs-12" />
+                                <hr />
 
                                 <div class="vendor-ref-list col-xs-12">
 
-                                    <div id="postpone-vendor-div" class="col-xs-9">
+                                    <!-- <div id="postpone-vendor-div" class="col-xs-9">
 
-                                    </div>
+                                    </div> -->
 
                                     <div id="postpone-ref-num-div" class="col-xs-3">
 
@@ -270,13 +293,10 @@
                             <p style="margin: 10px 0;">Today - <b><?php echo $date ?></b> (YYYY-MM-DD)</p>
                             <!-- <p style="margin-bottom: 0;">Today's total due - <b><span id="total-due-span"></span></b></p> -->
                         </div>
-                        <!-- <div class="col-xs-6" style="margin-top: 25px;text-align: right;">
-                            <button class="btn btn-success complete-btn">Complete</button>&nbsp;<button class="btn btn-danger postpone-btn">Postpone</button>
-                        </div> -->
                         
                         <hr class="col-xs-12" />
                         
-                        <table id="task-table" class="stripe" cellspacing="0" width="100%" style="display: none;">
+                        <table id="task-table" class="display" cellspacing="0" width="100%" style="display: none;">
                             <thead>
                               <tr>
                                 <th>Vendor</th>
@@ -289,7 +309,7 @@
                                     while($row = $result->fetch_assoc()) {
                                         // array_push($tableRows,$row);
                                         echo 
-                                            '<tr class="clickable" data-name="'.$row['vendor'].'">
+                                            '<tr data-name="'.$row['vendor'].'">
                                                 <td>'.$row['vendor'].'</td>
                                                 <td>'.$row['sum_amount'].'</td>
                                                 <td>'.$row['min_date'].'</td>
@@ -330,8 +350,14 @@
                         </div>
                     </div>
 
-                    <div role="tabpanel" class="tab-pane" id="detail-tab">
-                        <h1 id="detail-vendor-name"></h1>
+                    <div role="tabpanel" class="tab-pane" id="detail">
+
+                        <div class="col-xs-6" style="margin-top: 25px;text-align: center;width: 100%;">
+                            <button class="btn btn-success complete-btn">Complete</button>&nbsp;<button class="btn btn-danger postpone-btn">Postpone</button>
+                        </div>
+                        
+                        <hr class="col-xs-12" />
+
                         <div id="detail-vendor-info">
                             <table id="detail-table" class="display">
                                 <thead>
@@ -344,7 +370,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    s
+                                    
                                 </tbody>
                                 <tfoot>
                                     <tr>
@@ -369,6 +395,13 @@
 
         <script type="text/javascript">
 
+
+            // stores workbook sheets after drag and drop
+            var wbSheets = [];
+
+            // stores selected ref# - amount info
+            var selectedRefAmountMap = {};
+
             $(document).ready(function() {
 
                 // calculateSubtotal();
@@ -389,86 +422,151 @@
                     url: "get_detail.php",
                     data: {vendor_name: name},
                     success: function(detailList){
-                        // var resultList = JSON.parse(detailList);
-                        var resultList = detailList;
-                        console.log('html: '+resultList);
+                        var resultList = JSON.parse(detailList);
+                        // var resultList = detailList;
+                        console.log('html: ',resultList);
                         console.log('name: '+name);
                         $('#detail-vendor-name').text(name);
-                        $('#detail-tab').show();
-                        $('#detail-tab a').html(name);
+                        $('#detail-tab-controll').show();
+                        $('#detail-tab-controll a').html(name);
 
+                        // destroy table before reinitiating
+                        if($.fn.DataTable.isDataTable('#detail-table')){
+                            $('#detail-table').DataTable().destroy();
+                        }
+
+                        // construct and append datatable body row html
+                        $('#detail-table tbody').html(
+                            function () {
+                                var result = '';
+                                for(var i = 0;i<resultList.length;i++){
+                                    var cur = resultList[i];
+                                    result += ('<tr data-ref="'+cur['ref_num']+'" data-amount="'+cur['amount_due_num']+'">'+
+                                                    '<td>'+cur['vendor']+'</td>'+
+                                                    '<td>'+cur['amount_due']+'</td>'+
+                                                    '<td>'+cur['ref_num']+'</td>'+
+                                                    '<td>'+cur['memo']+'</td>'+
+                                                    '<td>'+cur['due_date']+'</td>'+
+                                               '</tr>');
+                                }
+                                return result;
+                            }
+                        );
                         $('#detail-table').DataTable({
-                            data: resultList,
-                            columns: [
-                                {title: "Vendor"},
-                                {title: "Amount Due"},
-                                {title: "Ref#"},
-                                {title: "Memo"},
-                                {title: "Due Date"}
-                            ]
+                            "aaSorting": [[4,"asc"]]
                         });
 
-                        $('#detail-tab').click();
+                        // provide vendor name to modals
+                        $('.vendor-name-span').text(name);
+
+                        $('.nav-tabs a[href="#detail"]').tab('show');
                         // window.location = window.location.pathname + window.location.hash;
                     }  
                 });
-            })
+            });
 
-            function calculateSubtotal(){
+            // onclick handler to select/de-select individual records in detail page
+            $("body").on("click","#detail #detail-table tbody tr",function(){
+                $(this).toggleClass('selected-row');
 
+                if(selectedRefAmountMap[$(this).data('ref')]){
+                    delete selectedRefAmountMap[$(this).data('ref')];
+                }else{
+                    selectedRefAmountMap[$(this).data('ref')] = parseFloat($(this).data('amount'));
+                }
+            });
 
-                var vendor = '';
-                var cur_vendor = '';
-                var string_amount = '';
+            // Open Complete Modal
+            $("body").on("click",".complete-btn",function(){
+                // var map = constructRefAmountMap();
+                if(!jQuery.isEmptyObject(selectedRefAmountMap)){
+                    setModalLists('#complete');
+                    $('#complete-modal').modal();
+                }else{
+                    alert('Please select at least one transaction before proceeding.');
+                }
+            });
 
-                var subtotal;
-                var subtotal_final = 0;
-                var total_due = 0;
+            // TODO: Open Postpone Modal
+            // $("body").on("click",".postpone-btn",function(){
+            //     if(checkListEmpty()){
+            //         var list = setModalLists();
+            //         $('#postpone-ref-num-div').html(constructRefAmountHtml(list));
+            //         $('#postpone-ref-hidden').val(ref_list.join(','));
+            //         $('#postpone-modal').modal();
+            //     }
+            // });
 
-                var cur_amount;
+            function setModalLists(target) {
 
-                var first_vendor;
+                // construct lists
+                var result_ref = '<dl>';
+                var result_amount = '<dl>';
 
-                // calculate and display subtotal for each vendor & total due for today
-                $('#task-table > tbody > tr').each(function () {
-                    cur_vendor = $(this).find('td:first').text();
-                    string_amount = $(this).find('td:nth-child(2)').text();
-                    cur_amount = Number(string_amount.replace(/[^0-9\.-]+/g,""));
-                    total_due += cur_amount;
+                var total_amount = 0;
+                var total_amount_text = '';
 
-                    if(vendor==''){
-                        // base case
-                        vendor = cur_vendor;
-                        subtotal = cur_amount;
-                        $(this).find('td:first').attr('id','first_vendor');
-                    }else if(vendor == cur_vendor){
-                        subtotal += cur_amount;
-                    }else{
-                        subtotal_final = subtotal.toFixed(2);
-                        first_vendor = $('#first_vendor');
-                        first_vendor.html(first_vendor.text()+' <b>('+subtotal_final+')</b>');
-                        first_vendor.attr('id','');
-                        subtotal = cur_amount;
+                result_ref += ('<dt>Ref #</dt>');
+                result_amount += ('<dt>Amount $</dt>');
 
-                        $(this).find('td:first').attr('id','first_vendor');
-                        vendor = cur_vendor;
-
-                    }
+                $.each(selectedRefAmountMap,function(key,value){
+                    result_ref += ('<dd>'+key+'</dd>');
+                    result_amount += ('<dd>'+value+'</dd>');
+                    total_amount += value;
                 });
 
-                total_due = '$ ' + total_due.toFixed(2);
-                $('#total-due-span').text(total_due);
+                result_ref += '</dl>';
+                result_amount += '</dl>';
 
-                var last = $('#task-table > tbody > tr:last');
-                if(last.length){
-                    subtotal_final = subtotal.toFixed(2);
-                    var f_col = last.find('td:first');
-                    f_col.html(f_col.text()+' <b>('+subtotal_final+')</b>');
-                }
+                // append subtotal
+                total_amount_text = '$'+total_amount.formatMoney(2, '.', ',');
+
+                $('.modal-subtotal').text('Subtotal : '+total_amount_text)
+
+                $(target+'-ref-num-div').html(result_ref);
+                $(target+'-amount-div').html(result_amount);
             }
 
-            // stores workbook sheets after drag and drop
-            var wbSheets = [];
+            // format money helper
+            Number.prototype.formatMoney = function(c, d, t){
+                var n = this, 
+                    c = isNaN(c = Math.abs(c)) ? 2 : c, 
+                    d = d == undefined ? "." : d, 
+                    t = t == undefined ? "," : t, 
+                    s = n < 0 ? "-" : "", 
+                    i = String(parseInt(n = Math.abs(Number(n) || 0).toFixed(c))), 
+                    j = (j = i.length) > 3 ? j % 3 : 0;
+                   return s + (j ? i.substr(0, j) + t : "") + i.substr(j).replace(/(\d{3})(?=\d)/g, "$1" + t) + (c ? d + Math.abs(n - i).toFixed(c).slice(2) : "");
+            };
+
+            function confirm_complete() {
+                console.log(JSON.stringify(ref_list));
+                $.ajax({
+                    type: "POST",
+                    url: "confirm_complete.php",
+                    data: {ref_num: JSON.stringify(ref_list)},
+                    success: function (html) {
+                        alert(html);
+                        window.location = window.location.pathname + window.location.hash;
+                    }
+                });
+                $('#complete-modal').modal('toggle');
+            }
+
+            // TODO: update postpone modal from form to js ajax
+            function confirm_postpone() {
+                console.log(JSON.stringify(ref_list));
+                $.ajax({
+                    type: "POST",
+                    url: "confirm_complete.php",
+                    data: {ref_num: JSON.stringify(ref_list)},
+                    success: function (html) {
+                        alert(html);
+                        window.location = window.location.pathname + window.location.hash;
+                    }
+                });
+                $('#complete-modal').modal('toggle');
+            }
 
             function uploadSheets() {
                 // iterate through json
@@ -487,112 +585,117 @@
                 // }
             }
 
-            var vendor_list = [];
-            var ref_list = [];
+            // function constructRefAmountMap() {
+            //     var result = {};
+            //     $('.selected-row').each(function () {
+            //         result[$(this).data('ref')] = parseFloat($(this).data('amount'));
+            //         // result.push($(this).data('ref'));
+            //     });
+            //     console.log(result);
+            //     return result;
+            // }
 
-            $("body").on("change",".row-checkbox",function(){
-                checkBoxEventContent($(this));
-            });
-
-            $("body").on("click",".row-checkbox-parent",function(e){
-                if (e.target !== this)
-                    return;
-
-                var checkbox = $(this).find('.row-checkbox');
-                checkbox.click();
-                // checkbox.prop('checked',(checkbox.prop('checked') ? false : true));
-                // checkBoxEventContent(checkbox);
-            });
+            // function checkListEmpty() {
+            //     console.log(vendor_list.length);
+            //     console.log(ref_list.length);
+            //     if (vendor_list.length&&ref_list.length){
+            //         return true;
+            //     }else{
+            //         alert('Please select at least one transaction before proceeding.');
+            //         return false;
+            //     }
+            // }
 
 
+            // function calculateSubtotal(){
 
-            function checkBoxEventContent(checkbox) {
 
-                var vendor = checkbox.data("vendor");
-                var ref_num = checkbox.data("ref");
+            //     var vendor = '';
+            //     var cur_vendor = '';
+            //     var string_amount = '';
 
-                if(checkbox.prop('checked')){
+            //     var subtotal;
+            //     var subtotal_final = 0;
+            //     var total_due = 0;
 
-                    vendor_list.push(vendor);
-                    ref_list.push(ref_num);
+            //     var cur_amount;
 
-                }else{
+            //     var first_vendor;
 
-                    vendor_list.splice(vendor_list.indexOf(vendor), 1 );
-                    ref_list.splice(ref_list.indexOf(ref_num), 1 );
+            //     // calculate and display subtotal for each vendor & total due for today
+            //     $('#task-table > tbody > tr').each(function () {
+            //         cur_vendor = $(this).find('td:first').text();
+            //         string_amount = $(this).find('td:nth-child(2)').text();
+            //         cur_amount = Number(string_amount.replace(/[^0-9\.-]+/g,""));
+            //         total_due += cur_amount;
 
-                }
+            //         if(vendor==''){
+            //             // base case
+            //             vendor = cur_vendor;
+            //             subtotal = cur_amount;
+            //             $(this).find('td:first').attr('id','first_vendor');
+            //         }else if(vendor == cur_vendor){
+            //             subtotal += cur_amount;
+            //         }else{
+            //             subtotal_final = subtotal.toFixed(2);
+            //             first_vendor = $('#first_vendor');
+            //             first_vendor.html(first_vendor.text()+' <b>('+subtotal_final+')</b>');
+            //             first_vendor.attr('id','');
+            //             subtotal = cur_amount;
 
-                console.log(vendor_list);
-                console.log(ref_list);
-            }
+            //             $(this).find('td:first').attr('id','first_vendor');
+            //             vendor = cur_vendor;
 
-            $("body").on("click",".complete-btn",function(){
-                if(checkListEmpty()){
-                    // $('#complete-ref-num-div').html(constructVendorList());
-                    var lists = constructVendorList();
-                    $('#complete-vendor-div').html(lists[0]);
-                    $('#complete-ref-num-div').html(lists[1]);
-                    $('#complete-modal').modal();
-                }
-            });
+            //         }
+            //     });
 
-            $("body").on("click",".postpone-btn",function(){
-                if(checkListEmpty()){
-                    var lists = constructVendorList();
-                    $('#postpone-vendor-div').html(lists[0]);
-                    $('#postpone-ref-num-div').html(lists[1]);
-                    $('#postpone-ref-hidden').val(ref_list.join(','));
-                    $('#postpone-modal').modal();
-                }
-            });
+            //     total_due = '$ ' + total_due.toFixed(2);
+            //     $('#total-due-span').text(total_due);
 
-            function checkListEmpty() {
-                console.log(vendor_list.length);
-                console.log(ref_list.length);
-                if (vendor_list.length&&ref_list.length){
-                    return true;
-                }else{
-                    alert('Please select at least one transaction before proceeding.');
-                    return false;
-                }
-            }
+            //     var last = $('#task-table > tbody > tr:last');
+            //     if(last.length){
+            //         subtotal_final = subtotal.toFixed(2);
+            //         var f_col = last.find('td:first');
+            //         f_col.html(f_col.text()+' <b>('+subtotal_final+')</b>');
+            //     }
+            // }
 
-            function constructVendorList() {
+            // $("body").on("change",".row-checkbox",function(){
+            //     checkBoxEventContent($(this));
+            // });
 
-                var result_vendor = '<ul>';
-                var result_ref = '<ul>';
+            // $("body").on("click",".row-checkbox-parent",function(e){
+            //     if (e.target !== this)
+            //         return;
 
-                result_vendor += ('<li>Vendor</li>');
-                result_ref += ('<li>Ref #</li>');
+            //     var checkbox = $(this).find('.row-checkbox');
+            //     checkbox.click();
+            //     // checkbox.prop('checked',(checkbox.prop('checked') ? false : true));
+            //     // checkBoxEventContent(checkbox);
+            // });
 
-                for(var i=0;i<vendor_list.length;i++){
-                    result_vendor += ('<li>'+vendor_list[i]+'</li>');
-                    result_ref += ('<li>'+ref_list[i]+'</li>');
-                }
-                result_vendor += '</ul>';
-                result_ref += '</ul>';
 
-                var result = [];
-                result.push(result_vendor);
-                result.push(result_ref);
 
-                return result;
-            }
+            // function checkBoxEventContent(checkbox) {
 
-            function confirm_complete() {
-                console.log(JSON.stringify(ref_list));
-                $.ajax({
-                    type: "POST",
-                    url: "confirm_complete.php",
-                    data: {ref_num: JSON.stringify(ref_list)},
-                    success: function (html) {
-                        alert(html);
-                        window.location = window.location.pathname + window.location.hash;
-                    }
-                });
-                $('#complete-modal').modal('toggle');
-            }
+            //     var vendor = checkbox.data("vendor");
+            //     var ref_num = checkbox.data("ref");
+
+            //     if(checkbox.prop('checked')){
+
+            //         vendor_list.push(vendor);
+            //         ref_list.push(ref_num);
+
+            //     }else{
+
+            //         vendor_list.splice(vendor_list.indexOf(vendor), 1 );
+            //         ref_list.splice(ref_list.indexOf(ref_num), 1 );
+
+            //     }
+
+            //     console.log(vendor_list);
+            //     console.log(ref_list);
+            // }
 
             // function createRefListJSON(refs) {
             //     refs.forEach(function (item) { 
