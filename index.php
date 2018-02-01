@@ -12,21 +12,15 @@
         //     $ref_num = $_GET['refNum'];
         //     $new_date = $_GET['newDate'];
         // }
-        $is_postpone = false;
-        if(!empty($_SESSION['type']) && $_SESSION['type'] == 'postpone'){
-            // $response_type = $_GET['type'];
-            $is_postpone = true;
-            $ref_num = $_SESSION['refNum'];
-            $new_date = $_SESSION['newDate'];
-        }
 
         date_default_timezone_set('America/Los_Angeles');
         $date_stripped = date('Ymd');
         $date = date('Y-m-d');
         $minDate = date('Y-m-d', strtotime($date. ' + 1 days'));
 
-        // $result = $conn->query('SELECT id, vendor, amount_due, ref_num, memo, due_date FROM ALERT_DETAIL WHERE uid="'.$_SESSION['id'].'" AND due_date<='.$date_stripped.' AND is_done=0 ORDER BY vendor,due_date');
-        $result = $conn->query('select t.id, t.threshold,t.vendor,a.sum_amount,a.min_date from threshold_info t join (select sum(amount_due_num) as sum_amount,min(due_date) as min_date, vendor from ALERT_DETAIL where uid="'.$_SESSION['id'].'" AND due_date<='.$date_stripped.' AND is_done=0 group by vendor) a on t.vendor = a.vendor where t.uid = "'.$_SESSION['id'].'" and a.sum_amount > t.threshold order by a.min_date');
+        $query = 'select t.id, t.threshold,t.vendor,a.sum_amount,a.min_date from threshold_info t join (select sum(amount_due_num) as sum_amount,min(due_date) as min_date, vendor from ALERT_DETAIL where uid="'.$_SESSION['id'].'" AND due_date<='.$date_stripped.' AND is_done=0 group by vendor) a on t.vendor = a.vendor where t.uid = "'.$_SESSION['id'].'" and a.sum_amount > t.threshold order by a.min_date';
+
+        $result = $conn->query($query);
 
         $rowCount = mysqli_num_rows($result);
     }
@@ -36,10 +30,24 @@
     <head>
         <title>AP Alert System</title>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
         <link rel="icon" type="image/png" href="img/logo.png" />
+
+
+        <link rel="stylesheet" type="text/css" href="vendor/bootstrap.min.css">
+        <!-- <link rel="stylesheet" type="text/css" href="vendor/jquery.handsontable.full.css"> -->
+        <link rel="stylesheet" type="text/css" href="vendor/samples.css">
+        <link rel="stylesheet" type="text/css" href="vendor/alertify.css">
         <link rel="stylesheet" type="text/css" href="css/sheetjs.css">
+        <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/bs/dt-1.10.16/b-1.5.1/sl-1.2.5/datatables.min.css"/>
         <link rel="stylesheet" type="text/css" href="css/alert-system.css">
-        <link rel="stylesheet" type="text/css" href="css/datatables.min.css">
+ 
+
+        <!-- <link rel="stylesheet" type="text/css" href="css/datatables.min.css"> -->
+        <!-- <link rel="stylesheet" type="text/css" href="vendor/select.datatables.min.css"> -->
+
 
         <style type="text/css">
             #alerts{
@@ -116,18 +124,6 @@
         </style>
     </head>
     <body>
-        <script src="vendor/alertify.js"></script>
-        <script src="vendor/jquery.min.js"></script>
-        <script src="vendor/bootstrap.min.js"></script>
-        <script src="vendor/jquery.handsontable.full.js"></script>
-        <script src="vendor/spin.js"></script>
-        <script src="js/datatables.min.js"></script>
-
-
-        <link rel="stylesheet" type="text/css" href="vendor/bootstrap.min.css">
-        <link rel="stylesheet" type="text/css" href="vendor/jquery.handsontable.full.css">
-        <link rel="stylesheet" type="text/css" href="vendor/samples.css">
-        <link rel="stylesheet" type="text/css" href="vendor/alertify.css">
 
         <div class="container">
             <div class="row">
@@ -189,11 +185,11 @@
 
                                 <div class="vendor-ref-list col-xs-12">
 
-                                    <div id="complete-ref-num-div" class="col-xs-6">
+                                    <div class="modal-ref-num-div col-xs-6">
 
                                     </div>
 
-                                    <div id="complete-amount-div" class="col-xs-6">
+                                    <div class="modal-amount-div col-xs-6">
 
                                     </div>
 
@@ -218,7 +214,7 @@
                   <div class="modal-dialog">
 
                     <!-- Modal content-->
-                    <form class=".form-inline" action="postpone_action.php" method="post">
+                    <!-- <form class=".form-inline" action="postpone_action.php" method="post"> -->
                         <div class="modal-content">
                           <div class="modal-header">
                             <button type="button" class="close" data-dismiss="modal">&times;</button>
@@ -231,7 +227,6 @@
                                     <div class="form-group">
                                         <label for="dates">Postpone to </label>&nbsp;
                                         <input type="date" name="dates" id="dates" min="<?php echo $minDate?>" required="true" >
-                                        <input type="hidden" name="ref_num" id="postpone-ref-hidden">
                                     </div>
                                 </div>
 
@@ -239,23 +234,27 @@
 
                                 <div class="vendor-ref-list col-xs-12">
 
-                                    <!-- <div id="postpone-vendor-div" class="col-xs-9">
+                                    <div class="modal-ref-num-div col-xs-6">
 
-                                    </div> -->
+                                    </div>
 
-                                    <div id="postpone-ref-num-div" class="col-xs-3">
+                                    <div class="modal-amount-div col-xs-6">
 
                                     </div>
 
                                 </div>
+                                <hr/>
+                                <div class="modal-subtotal-container col-xs-6 col-xs-offset-6">
+                                    <p class="modal-subtotal"></p>
+                                </div>
                             </div>
                           </div>
                           <div class="modal-footer">
-                            <a type="button" class="btn btn-default" data-dismiss="modal" style="float: left;width: 100px;">Cancel</a>
-                            <button type="submit" class="btn btn-success" style="width: 100px;">Postpone</button>
+                            <button type="button" class="btn btn-default" data-dismiss="modal" style="float: left;width: 100px;">Cancel</button>
+                            <button type="button" class="btn btn-success" style="width: 100px;" onclick="confirm_postpone();">Confirm</button>
                           </div>
                         </div>
-                    </form>
+                    <!-- </form> -->
 
                   </div>
                 </div>
@@ -266,27 +265,22 @@
                     <div role="tabpanel" class="tab-pane active" id="home">
                 
                         <?php 
-                            // if(!empty($_GET['type'])&&$response_type=='postpone'){
-                            if($is_postpone){
-                                echo '<div id="alerts">';
-                                    if($new_date!='0') {
-                                        echo    '<div class="alert alert-success alert-dismissable fade in">
-                                                    <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
-                                                    Record with Ref # - '.$ref_num.' is successfully postponed to '.$new_date.'
-                                                </div>';
-                                    }
-                                    else{
-                                        echo    '<div class="alert alert-danger alert-dismissable fade in">
-                                                    <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
-                                                    Something went wrong when updating record with Ref # - '.$ref_num.'. Please let Tony know about this.
-                                                </div>';
-                                    }
-                                echo '</div>';
-
-                                unset($_SESSION['type']);
-                                unset($_SESSION['refNum']);
-                                unset($_SESSION['newDate']);
-                            }
+                            // if($is_postpone){
+                            //     echo '<div id="alerts">';
+                            //         if($new_date!='0') {
+                            //             echo    '<div class="alert alert-success alert-dismissable fade in">
+                            //                         <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+                            //                         Record with Ref # - '.$ref_num.' is successfully postponed to '.$new_date.'
+                            //                     </div>';
+                            //         }
+                            //         else{
+                            //             echo    '<div class="alert alert-danger alert-dismissable fade in">
+                            //                         <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+                            //                         Something went wrong when updating record with Ref # - '.$ref_num.'. Please let Tony know about this.
+                            //                     </div>';
+                            //         }
+                            //     echo '</div>';
+                            // }
                         ?>
 
                         <div class="col-xs-6">
@@ -296,7 +290,7 @@
                         
                         <hr class="col-xs-12" />
                         
-                        <table id="task-table" class="display" cellspacing="0" width="100%" style="display: none;">
+                        <table id="task-table" class="table table-striped table-bordered" cellspacing="0" width="100%" style="display: none;">
                             <thead>
                               <tr>
                                 <th>Vendor</th>
@@ -311,7 +305,7 @@
                                         echo 
                                             '<tr data-name="'.$row['vendor'].'">
                                                 <td>'.$row['vendor'].'</td>
-                                                <td>'.$row['sum_amount'].'</td>
+                                                <td class="currency">'.$row['sum_amount'].'</td>
                                                 <td>'.$row['min_date'].'</td>
                                             </tr>';
                                     }
@@ -353,13 +347,21 @@
                     <div role="tabpanel" class="tab-pane" id="detail">
 
                         <div class="col-xs-6" style="margin-top: 25px;text-align: center;width: 100%;">
-                            <button class="btn btn-success complete-btn">Complete</button>&nbsp;<button class="btn btn-danger postpone-btn">Postpone</button>
+                            <button type="button" class="btn btn-success complete-btn" data-type="#complete" onclick="handleAction(this)">
+                                Complete <span class="glyphicon glyphicon-flag"></span>
+                            </button>&nbsp;
+                            <button class="btn btn-danger postpone-btn" data-type="#postpone" onclick="handleAction(this)">
+                                Postpone <span class="glyphicon glyphicon-time"></span>
+                            </button>
+                            <button type="button" class="btn btn-info" style="float: right;" onclick="selectAllRows()">
+                              Check All&nbsp;<span class="glyphicon glyphicon-check"></span>
+                            </button>
                         </div>
                         
                         <hr class="col-xs-12" />
 
                         <div id="detail-vendor-info">
-                            <table id="detail-table" class="display">
+                            <table id="detail-table" class="table table-striped table-bordered" cellspacing="0" width="100%">
                                 <thead>
                                     <tr>
                                         <th>Vendor</th>
@@ -388,6 +390,18 @@
             </div>
         </div>
 
+    </body>
+    
+        <script src="vendor/jquery-3.3.1.min.js"></script>
+        <script src="vendor/alertify.js"></script>
+        <script src="vendor/bootstrap.min.js"></script>
+        <!-- <script src="vendor/jquery.handsontable.full.js"></script> -->
+        <script src="vendor/spin.js"></script>
+        <!-- <script src="js/datatables.min.js"></script> -->
+        <!-- <script src="vendor/datatables.select.min.js"></script> -->
+        
+        <script type="text/javascript" src="https://cdn.datatables.net/v/bs/dt-1.10.16/b-1.5.1/sl-1.2.5/datatables.min.js"></script>
+        
         <script src="js/shim.js"></script>
         <script src="js/xlsx.full.min.js"></script>
         <script src="js/dropsheet.js"></script>
@@ -405,6 +419,10 @@
             $(document).ready(function() {
 
                 // calculateSubtotal();
+
+                $('.currency').each(function () {
+                    $(this).html(formatDollarAmount(parseFloat($(this).html())));
+                })
 
                 $('#task-table').DataTable({
                     "aaSorting": []
@@ -453,7 +471,17 @@
                             }
                         );
                         $('#detail-table').DataTable({
-                            "aaSorting": [[4,"asc"]]
+                            aaSorting: [[4,"asc"]],
+                            buttons: [
+                                'selectAll',
+                                'selectNone'
+                            ],
+                            language: {
+                                buttons: {
+                                    selectAll: "Select all",
+                                    selectNone: "Select none"
+                                }
+                            }
                         });
 
                         // provide vendor name to modals
@@ -472,33 +500,28 @@
                 if(selectedRefAmountMap[$(this).data('ref')]){
                     delete selectedRefAmountMap[$(this).data('ref')];
                 }else{
-                    selectedRefAmountMap[$(this).data('ref')] = parseFloat($(this).data('amount'));
+                    putIntoSelectedMap(this);
                 }
             });
 
+            function putIntoSelectedMap(row) {
+                selectedRefAmountMap[$(row).data('ref')] = parseFloat($(row).data('amount'));
+            }
+
             // Open Complete Modal
-            $("body").on("click",".complete-btn",function(){
+            // $("body").on("click",".complete-btn",function(){
+            function handleAction(button){
                 // var map = constructRefAmountMap();
                 if(!jQuery.isEmptyObject(selectedRefAmountMap)){
-                    setModalLists('#complete');
-                    $('#complete-modal').modal();
+                    var buttonId = $(button).data('type');
+                    setModalLists();
+                    $(buttonId+'-modal').modal();
                 }else{
                     alert('Please select at least one transaction before proceeding.');
                 }
-            });
+            }
 
-            // TODO: Open Postpone Modal
-            // $("body").on("click",".postpone-btn",function(){
-            //     if(checkListEmpty()){
-            //         var list = setModalLists();
-            //         $('#postpone-ref-num-div').html(constructRefAmountHtml(list));
-            //         $('#postpone-ref-hidden').val(ref_list.join(','));
-            //         $('#postpone-modal').modal();
-            //     }
-            // });
-
-            function setModalLists(target) {
-
+            function setModalLists() {
                 // construct lists
                 var result_ref = '<dl>';
                 var result_amount = '<dl>';
@@ -519,15 +542,20 @@
                 result_amount += '</dl>';
 
                 // append subtotal
-                total_amount_text = '$'+total_amount.formatMoney(2, '.', ',');
+                total_amount_text = formatDollarAmount(total_amount);
 
                 $('.modal-subtotal').text('Subtotal : '+total_amount_text)
 
-                $(target+'-ref-num-div').html(result_ref);
-                $(target+'-amount-div').html(result_amount);
+                $('.modal-ref-num-div').html(result_ref);
+                $('.modal-amount-div').html(result_amount);
             }
 
             // format money helper
+            function formatDollarAmount(amount) {
+                return '$'+amount.formatMoney(2, '.', ',');
+            }
+
+            // util method for adding ',' to number like currency
             Number.prototype.formatMoney = function(c, d, t){
                 var n = this, 
                     c = isNaN(c = Math.abs(c)) ? 2 : c, 
@@ -540,33 +568,53 @@
             };
 
             function confirm_complete() {
-                console.log(JSON.stringify(ref_list));
+                console.log(JSON.stringify(Object.keys(selectedRefAmountMap)));
                 $.ajax({
                     type: "POST",
                     url: "confirm_complete.php",
-                    data: {ref_num: JSON.stringify(ref_list)},
+                    data: {
+                        ref_num: JSON.stringify(Object.keys(selectedRefAmountMap))
+                    },
                     success: function (html) {
                         alert(html);
                         window.location = window.location.pathname + window.location.hash;
                     }
                 });
-                $('#complete-modal').modal('toggle');
+                $('#complete-modal').modal('hide');
             }
 
-            // TODO: update postpone modal from form to js ajax
             function confirm_postpone() {
-                console.log(JSON.stringify(ref_list));
-                $.ajax({
-                    type: "POST",
-                    url: "confirm_complete.php",
-                    data: {ref_num: JSON.stringify(ref_list)},
-                    success: function (html) {
-                        alert(html);
-                        window.location = window.location.pathname + window.location.hash;
-                    }
-                });
-                $('#complete-modal').modal('toggle');
+                console.log(JSON.stringify(Object.keys(selectedRefAmountMap)));
+                var dates = $('#dates').val();
+                console.log(dates);
+                if(dates){
+                    $.ajax({
+                        type: "POST",
+                        url: "confirm_postpone.php",
+                        data: {
+                            ref_num:    JSON.stringify(Object.keys(selectedRefAmountMap)),
+                            dates:      dates
+                        },
+                        success: function (html) {
+                            alert(html);
+                            window.location = window.location.pathname + window.location.hash;
+                        }
+                    });
+                    $('#postpone-modal').modal('hide');
+                }else{
+                    alert('Please enter a valid date');
+                }
             }
+
+            // function selectAllRows() {
+            //     $this = $('#detail-table');
+            //     if($.fn.DataTable.isDataTable($this)){
+            //         $this.rows().every(function (rowIdx,tableLoop,rowLoop) {
+            //             $(this).toggleClass('selected-row');
+            //             putIntoSelectedMap(this);
+            //         });
+            //     }
+            // }
 
             function uploadSheets() {
                 // iterate through json
@@ -716,5 +764,4 @@
           //   var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
           // })();
         </script>
-    </body>
 </html>

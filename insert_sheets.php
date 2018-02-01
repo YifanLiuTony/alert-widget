@@ -43,7 +43,7 @@
 		}
 
 		// ignore duplicates 
-		$conn->query('INSERT IGNORE INTO THRESHOLD_INFO (uid, vendor, threshold) VALUES '.implode(',', $sql));
+		$conn->query('REPLACE INTO THRESHOLD_INFO (uid, vendor, threshold) VALUES '.implode(',', $sql));
 
 		$affected = $conn -> affected_rows;
 

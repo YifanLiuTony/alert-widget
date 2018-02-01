@@ -13,7 +13,7 @@
 		$affected = $conn->affected_rows;
 
 		if($affected>0){
-			echo "Success! Please refresh the page by clicking on 'OK' to apply new change.";
+			echo "Success!";
 		}else{
 			// echo  'UPDATE ALERT_DETAIL SET is_done=1 WHERE ref_num IN ("'.$refsImploded.'") AND uid="'.$_SESSION['id'].'"';
 			echo 'Update failed, let Tony know about this';
