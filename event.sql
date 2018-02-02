@@ -1,4 +1,0 @@
-CREATE EVENT auto_postpone_alerts
-	ON SCHEDULE EVERY 1 DAY STARTS '2017-10-15 23:59:59' 
-	DO 
-    	UPDATE ALERT_DETAIL SET due_date=DATE_ADD(due_date,INTERVAL 1 DAY) WHERE due_date=CURDATE() AND is_done=0;
