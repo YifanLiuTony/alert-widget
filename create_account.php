@@ -3,10 +3,10 @@
         <title>Create Account</title>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
-        <script src="vendor/jquery.min.js"></script>
+        <script src="vendor/jquery-3.3.1.min.js"></script>
         <script src="vendor/bootstrap.min.js"></script>
         <link rel="stylesheet" media="screen" href="vendor/bootstrap.min.css">
-        <link rel="stylesheet" media="screen" href="css/alert-system.css">
+        <link rel="stylesheet" media="screen" href="alert-system.css">
         
     </head>
     <body>

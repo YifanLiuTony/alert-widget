@@ -37,19 +37,19 @@
 
 
         <link rel="stylesheet" type="text/css" href="vendor/bootstrap.min.css">
-        <!-- <link rel="stylesheet" type="text/css" href="vendor/jquery.handsontable.full.css"> -->
+        <link rel="stylesheet" type="text/css" href="vendor/jquery.handsontable.min.css">
         <link rel="stylesheet" type="text/css" href="vendor/samples.css">
-        <link rel="stylesheet" type="text/css" href="vendor/alertify.css">
-        <link rel="stylesheet" type="text/css" href="css/sheetjs.css">
-        <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/bs/dt-1.10.16/b-1.5.1/sl-1.2.5/datatables.min.css"/>
-        <link rel="stylesheet" type="text/css" href="css/alert-system.css">
- 
-
-        <!-- <link rel="stylesheet" type="text/css" href="css/datatables.min.css"> -->
-        <!-- <link rel="stylesheet" type="text/css" href="vendor/select.datatables.min.css"> -->
+        <!-- <link rel="stylesheet" type="text/css" href="vendor/alertify.css"> -->
+        <link rel="stylesheet" type="text/css" href="vendor/sheetjs.css">
+        <link rel="stylesheet" type="text/css" href="vendor/datatables.min.css">
+        <link rel="stylesheet" type="text/css" href="vendor/select.datatables.min.css">
+        <link rel="stylesheet" type="text/css" href="alert-system.css">
 
 
         <style type="text/css">
+            html body{
+                background-color: white;
+            }
             #alerts{
                 margin-top: 10px;
             }
@@ -62,14 +62,12 @@
             tbody tr{
                 cursor: pointer;
             }
-            table.dataTable.hover tbody tr:hover, 
-            table.dataTable.display tbody tr:hover,
-            table.dataTable.display tbody tr:hover>.sorting_1, 
-            table.dataTable.order-column.hover tbody tr:hover>.sorting_1{
+            #task-table tbody tr:hover,
+            #detail-table tbody tr:hover{
                 background-color: #65d6d8;
             }
             #detail-table tbody tr.selected-row td{
-                background-color: #56f78e;
+                background-color: #5bc0de;
             }
             .modal{
                 width: 100%!important;
@@ -98,28 +96,6 @@
             .vendor-ref-list dl dd{
                 text-align: center;
                 line-height: 30px;
-            }
-
-            .outer {
-                display: table;
-                position: absolute;
-                height: 100%;
-                width: 100%;
-            }
-
-            .middle {
-                display: table-cell;
-                vertical-align: middle;
-            }
-
-            .inner {
-                margin-left: auto;
-                margin-right: auto; 
-                width: 400px;
-            }
-
-            .center{
-                text-align: center;
             }
         </style>
     </head>
@@ -295,6 +271,7 @@
                               <tr>
                                 <th>Vendor</th>
                                 <th>Subtotal</th>
+                                <th>Threshold</th>
                                 <th>Earliest Date</th>
                               </tr>
                             </thead>
@@ -306,6 +283,7 @@
                                             '<tr data-name="'.$row['vendor'].'">
                                                 <td>'.$row['vendor'].'</td>
                                                 <td class="currency">'.$row['sum_amount'].'</td>
+                                                <td class="currency">'.$row['threshold'].'</td>
                                                 <td>'.$row['min_date'].'</td>
                                             </tr>';
                                     }
@@ -318,7 +296,7 @@
 
 
                     <div role="tabpanel" class="tab-pane" id="upload">
-                        <div id="left" class="col-xs-2">
+                        <div class="col-xs-2">
                             <div id="logo" style="padding-left: 0">
                                 <img src="img/logo.png" class="logo" alt="SheetJS Logo" width=128px height=128px />
                             </div>
@@ -329,7 +307,7 @@
                             
                         </div>
 
-                        <div id="right" class="col-xs-10">
+                        <div class="col-xs-10">
                             <div id="header" style="height: auto;">
                                 <!-- <pre id="out"></pre> -->
                                 <h2>AP Alert System - Prototype</h2>
@@ -353,8 +331,11 @@
                             <button class="btn btn-danger postpone-btn" data-type="#postpone" onclick="handleAction(this)">
                                 Postpone <span class="glyphicon glyphicon-time"></span>
                             </button>
-                            <button type="button" class="btn btn-info" style="float: right;" onclick="selectAllRows()">
-                              Check All&nbsp;<span class="glyphicon glyphicon-check"></span>
+                            <button type="button" class="btn btn-primary" style="float: right;" onclick="toggleAllRows(true)">
+                              Check All&nbsp;<span class="glyphicon glyphicon-ok-circle"></span>
+                            </button>
+                            <button type="button" class="btn btn-info" style="float: right;" onclick="toggleAllRows(false)">
+                              Uncheck All&nbsp;<span class="glyphicon glyphicon-remove-circle"></span>
                             </button>
                         </div>
                         
@@ -391,16 +372,13 @@
         </div>
 
     </body>
-    
+
         <script src="vendor/jquery-3.3.1.min.js"></script>
-        <script src="vendor/alertify.js"></script>
         <script src="vendor/bootstrap.min.js"></script>
-        <!-- <script src="vendor/jquery.handsontable.full.js"></script> -->
+        <script src="vendor/jquery.handsontable.min.js"></script>
         <script src="vendor/spin.js"></script>
-        <!-- <script src="js/datatables.min.js"></script> -->
-        <!-- <script src="vendor/datatables.select.min.js"></script> -->
-        
-        <script type="text/javascript" src="https://cdn.datatables.net/v/bs/dt-1.10.16/b-1.5.1/sl-1.2.5/datatables.min.js"></script>
+        <script src="vendor/datatables.min.js"></script>
+        <script src="vendor/datatables.select.min.js"></script>
         
         <script src="js/shim.js"></script>
         <script src="js/xlsx.full.min.js"></script>
@@ -415,6 +393,12 @@
 
             // stores selected ref# - amount info
             var selectedRefAmountMap = {};
+
+            // detail-table pointer
+            var detailTable;
+
+            // stores current vendor
+            var curVendorName;
 
             $(document).ready(function() {
 
@@ -435,6 +419,14 @@
             $('#task-table tbody tr').click(function () {
                 var name = $(this).data('name');
                 console.log(name);
+                curVendorName = name;
+                constructDetailTable(name);
+            });
+
+            function constructDetailTable(name) {
+                // empty selectedRefAmountMap
+                selectedRefAmountMap = {};
+
                 $.ajax({
                     type: "GET",
                     url: "get_detail.php",
@@ -470,48 +462,44 @@
                                 return result;
                             }
                         );
-                        $('#detail-table').DataTable({
+                        detailTable = $('#detail-table').DataTable({
                             aaSorting: [[4,"asc"]],
-                            buttons: [
-                                'selectAll',
-                                'selectNone'
-                            ],
-                            language: {
-                                buttons: {
-                                    selectAll: "Select all",
-                                    selectNone: "Select none"
-                                }
+                            select:{
+                                style: 'multi',
+                                className:'selected-row'
                             }
                         });
-
+                        
                         // provide vendor name to modals
                         $('.vendor-name-span').text(name);
 
                         $('.nav-tabs a[href="#detail"]').tab('show');
-                        // window.location = window.location.pathname + window.location.hash;
                     }  
                 });
-            });
+            }
 
-            // onclick handler to select/de-select individual records in detail page
-            $("body").on("click","#detail #detail-table tbody tr",function(){
-                $(this).toggleClass('selected-row');
-
+            $(document).on('click','#detail-table tbody tr',function () {
                 if(selectedRefAmountMap[$(this).data('ref')]){
                     delete selectedRefAmountMap[$(this).data('ref')];
                 }else{
-                    putIntoSelectedMap(this);
+                    selectedRefAmountMap[$(this).data('ref')] = parseFloat($(this).data('amount'));
                 }
-            });
+            })
 
-            function putIntoSelectedMap(row) {
-                selectedRefAmountMap[$(row).data('ref')] = parseFloat($(row).data('amount'));
+            function toggleAllRows(setTrue) {
+                if($.fn.DataTable.isDataTable(detailTable)){
+                    if(setTrue){
+                        detailTable.rows().select();
+                    }else{
+                        detailTable.rows().deselect();
+                    }
+                }
             }
 
-            // Open Complete Modal
-            // $("body").on("click",".complete-btn",function(){
+            // Open Modal
             function handleAction(button){
                 // var map = constructRefAmountMap();
+                // constructSelectedMap();
                 if(!jQuery.isEmptyObject(selectedRefAmountMap)){
                     var buttonId = $(button).data('type');
                     setModalLists();
@@ -577,7 +565,8 @@
                     },
                     success: function (html) {
                         alert(html);
-                        window.location = window.location.pathname + window.location.hash;
+                        constructDetailTable(curVendorName);
+                        // window.location = window.location.pathname + window.location.hash;
                     }
                 });
                 $('#complete-modal').modal('hide');
@@ -597,7 +586,8 @@
                         },
                         success: function (html) {
                             alert(html);
-                            window.location = window.location.pathname + window.location.hash;
+                            constructDetailTable(curVendorName);
+                            // window.location = window.location.pathname + window.location.hash;
                         }
                     });
                     $('#postpone-modal').modal('hide');
@@ -605,16 +595,6 @@
                     alert('Please enter a valid date');
                 }
             }
-
-            // function selectAllRows() {
-            //     $this = $('#detail-table');
-            //     if($.fn.DataTable.isDataTable($this)){
-            //         $this.rows().every(function (rowIdx,tableLoop,rowLoop) {
-            //             $(this).toggleClass('selected-row');
-            //             putIntoSelectedMap(this);
-            //         });
-            //     }
-            // }
 
             function uploadSheets() {
                 // iterate through json
@@ -626,7 +606,7 @@
                             data: {data: JSON.stringify(wbSheets)},
                             success: function(html){
                                 alert(html);
-                                // window.location = window.location.pathname + window.location.hash;
+                                window.location = window.location.pathname + window.location.hash;
                             }  
                         });
                     }
