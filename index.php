@@ -18,7 +18,7 @@
         $date = date('Y-m-d');
         $minDate = date('Y-m-d', strtotime($date. ' + 1 days'));
 
-        $query = 'select t.id, t.threshold,t.vendor,a.sum_amount,a.min_date from threshold_info t join (select sum(amount_due_num) as sum_amount,min(due_date) as min_date, vendor from ALERT_DETAIL where uid="'.$_SESSION['id'].'" AND due_date<='.$date_stripped.' AND is_done=0 group by vendor) a on t.vendor = a.vendor where t.uid = "'.$_SESSION['id'].'" and a.sum_amount > t.threshold order by a.min_date';
+        $query = 'select t.id, t.threshold,t.vendor,a.sum_amount,a.min_date from THRESHOLD_INFO t join (select sum(amount_due_num) as sum_amount,min(due_date) as min_date, vendor from ALERT_DETAIL where uid="'.$_SESSION['id'].'" AND due_date<='.$date_stripped.' AND is_done=0 group by vendor) a on t.vendor = a.vendor where t.uid = "'.$_SESSION['id'].'" and a.sum_amount > t.threshold order by a.min_date';
 
         $result = $conn->query($query);
 
@@ -66,7 +66,7 @@
             #detail-table tbody tr:hover{
                 background-color: #65d6d8;
             }
-            #detail-table tbody tr.selected-row td{
+            #detail-table tbody tr.selected td{
                 background-color: #5bc0de;
             }
             .modal{
@@ -392,7 +392,7 @@
             var wbSheets = [];
 
             // stores selected ref# - amount info
-            var selectedRefAmountMap = {};
+            // var selectedRefAmountMap = {};
 
             // detail-table pointer
             var detailTable;
@@ -425,66 +425,71 @@
 
             function constructDetailTable(name) {
                 // empty selectedRefAmountMap
-                selectedRefAmountMap = {};
+                // selectedRefAmountMap = {};
 
-                $.ajax({
-                    type: "GET",
-                    url: "get_detail.php",
-                    data: {vendor_name: name},
-                    success: function(detailList){
-                        var resultList = JSON.parse(detailList);
-                        // var resultList = detailList;
-                        console.log('html: ',resultList);
-                        console.log('name: '+name);
-                        $('#detail-vendor-name').text(name);
-                        $('#detail-tab-controll').show();
-                        $('#detail-tab-controll a').html(name);
+                if($('#task-table tbody tr[data-name="'+name+'"]')){
+                    $.ajax({
+                        type: "GET",
+                        url: "get_detail.php",
+                        data: {vendor_name: name},
+                        success: function(detailList){
+                            var resultList = JSON.parse(detailList);
+                            // var resultList = detailList;
+                            console.log('html: ',resultList);
+                            console.log('name: '+name);
+                            $('#detail-vendor-name').text(name);
+                            $('#detail-tab-controll').show();
+                            $('#detail-tab-controll a').html(name);
 
-                        // destroy table before reinitiating
-                        if($.fn.DataTable.isDataTable('#detail-table')){
-                            $('#detail-table').DataTable().destroy();
-                        }
+                            // destroy table before reinitiating
+                            if($.fn.DataTable.isDataTable('#detail-table')){
+                                $('#detail-table').DataTable().destroy();
+                            }
 
-                        // construct and append datatable body row html
-                        $('#detail-table tbody').html(
-                            function () {
-                                var result = '';
-                                for(var i = 0;i<resultList.length;i++){
-                                    var cur = resultList[i];
-                                    result += ('<tr data-ref="'+cur['ref_num']+'" data-amount="'+cur['amount_due_num']+'">'+
-                                                    '<td>'+cur['vendor']+'</td>'+
-                                                    '<td>'+cur['amount_due']+'</td>'+
-                                                    '<td>'+cur['ref_num']+'</td>'+
-                                                    '<td>'+cur['memo']+'</td>'+
-                                                    '<td>'+cur['due_date']+'</td>'+
-                                               '</tr>');
+                            // construct and append datatable body row html
+                            $('#detail-table tbody').html(
+                                function () {
+                                    var result = '';
+                                    for(var i = 0;i<resultList.length;i++){
+                                        var cur = resultList[i];
+                                        result += ('<tr data-ref="'+cur['ref_num']+'" data-amount="'+cur['amount_due_num']+'">'+
+                                                        '<td>'+cur['vendor']+'</td>'+
+                                                        '<td>'+cur['amount_due']+'</td>'+
+                                                        '<td>'+cur['ref_num']+'</td>'+
+                                                        '<td>'+cur['memo']+'</td>'+
+                                                        '<td>'+cur['due_date']+'</td>'+
+                                                   '</tr>');
+                                    }
+                                    return result;
                                 }
-                                return result;
-                            }
-                        );
-                        detailTable = $('#detail-table').DataTable({
-                            aaSorting: [[4,"asc"]],
-                            select:{
-                                style: 'multi',
-                                className:'selected-row'
-                            }
-                        });
-                        
-                        // provide vendor name to modals
-                        $('.vendor-name-span').text(name);
+                            );
+                            detailTable = $('#detail-table').DataTable({
+                                aaSorting: [[4,"asc"]],
+                                select:{
+                                    style: 'multi',
+                                    className:'selected'
+                                }
+                            });
 
-                        $('.nav-tabs a[href="#detail"]').tab('show');
-                    }  
-                });
+                            // provide vendor name to modals
+                            $('.vendor-name-span').text(name);
+
+                            $('.nav-tabs a[href="#detail"]').tab('show');
+                        }  
+                    });
+                }else{
+                    window.location = window.location.pathname + window.location.hash;
+                }
             }
 
-            $(document).on('click','#detail-table tbody tr',function () {
-                if(selectedRefAmountMap[$(this).data('ref')]){
-                    delete selectedRefAmountMap[$(this).data('ref')];
-                }else{
-                    selectedRefAmountMap[$(this).data('ref')] = parseFloat($(this).data('amount'));
-                }
-            })
+            // add selected data to map on click
+            // $(document).on('click','#detail-table tbody tr',function () {
+            //     if(selectedRefAmountMap[$(this).data('ref')]){
+            //         delete selectedRefAmountMap[$(this).data('ref')];
+            //     }else{
+            //         selectedRefAmountMap[$(this).data('ref')] = parseFloat($(this).data('amount'));
+            //     }
+            // })
 
             function toggleAllRows(setTrue) {
                 if($.fn.DataTable.isDataTable(detailTable)){
@@ -496,20 +501,47 @@
                 }
             }
 
+            function getSelectedData(name) {
+                return $.map(detailTable.rows('.selected').nodes(), function (item) {
+                    return $(item).data(name);
+                });
+            }
+
+            function constructSelectedMap() {
+                var selectedRefAmountMap = {};
+                var ref_list = getSelectedData("ref");
+                var amount_list = getSelectedData("amount");
+                if(ref_list.length != amount_list.length){
+                    return undefined;
+                }
+
+                for(var i=0;i<ref_list.length;i++){
+                    selectedRefAmountMap[ref_list[i]] = parseFloat(amount_list[i]);
+                }
+
+                console.log(selectedRefAmountMap);
+
+                return selectedRefAmountMap;
+            }
+
             // Open Modal
             function handleAction(button){
                 // var map = constructRefAmountMap();
-                // constructSelectedMap();
+                var selectedRefAmountMap = constructSelectedMap();
+                if(selectedRefAmountMap == undefined){
+                    alert('Something went wrong, let tony know about this and how to replicate the issue.');
+                    return false;
+                }
                 if(!jQuery.isEmptyObject(selectedRefAmountMap)){
                     var buttonId = $(button).data('type');
-                    setModalLists();
+                    setModalLists(selectedRefAmountMap);
                     $(buttonId+'-modal').modal();
                 }else{
                     alert('Please select at least one transaction before proceeding.');
                 }
             }
 
-            function setModalLists() {
+            function setModalLists(selectedRefAmountMap) {
                 // construct lists
                 var result_ref = '<dl>';
                 var result_amount = '<dl>';
@@ -556,12 +588,13 @@
             };
 
             function confirm_complete() {
-                console.log(JSON.stringify(Object.keys(selectedRefAmountMap)));
+                // console.log(JSON.stringify(Object.keys(selectedRefAmountMap)));
+                var ref_list = getSelectedData("ref");
                 $.ajax({
                     type: "POST",
                     url: "confirm_complete.php",
                     data: {
-                        ref_num: JSON.stringify(Object.keys(selectedRefAmountMap))
+                        ref_num: JSON.stringify(ref_list)
                     },
                     success: function (html) {
                         alert(html);
@@ -573,7 +606,7 @@
             }
 
             function confirm_postpone() {
-                console.log(JSON.stringify(Object.keys(selectedRefAmountMap)));
+                var ref_list = getSelectedData("ref");
                 var dates = $('#dates').val();
                 console.log(dates);
                 if(dates){
@@ -581,7 +614,7 @@
                         type: "POST",
                         url: "confirm_postpone.php",
                         data: {
-                            ref_num:    JSON.stringify(Object.keys(selectedRefAmountMap)),
+                            ref_num:    JSON.stringify(ref_list),
                             dates:      dates
                         },
                         success: function (html) {
